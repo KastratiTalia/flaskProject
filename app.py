@@ -16,7 +16,8 @@ def query_db(query, args=()):
     return data
 
 
-@app.route('/average_spending_by_age', methods=['GET'])
+# API 1
+@app.route('/total_spending', methods=['GET'])
 def average_spending_by_age():
     try:
         user_id = request.args.get('user_id')
@@ -42,12 +43,39 @@ def average_spending_by_age():
                 'age': result[0][2],
                 'total_spending': result[0][3]
             }
-
+        print(user_data)
         return json.dumps(user_data)
 
     except Exception as e:
         print("Unexpected error:", str(e))
         return json.dumps({'error': 'Internal Server Error'}), 500
+
+
+#API 2
+@app.route('/total_spent', methods=['GET'])
+def get_total_spendings():
+    user_id = request.args.get('user_id')
+    query = 'SELECT ui.age, AVG(us.money_spent) as average_spending' \
+            'FROM user_info ui' \
+            'INNER JOIN user_spending us' \
+            'ON ui.user_id = us.user_id' \
+            'WHERE ui.age BETWEEN 25 AND 30' \
+            'GROUP BY ui.age'
+
+    result = query_db(query, (user_id,))
+
+    return json.dumps({
+        'user_id': user_id,
+        'age_range': age_range,
+        'average_spending': average_spending
+    })
+
+
+#API 3
+@app.route('/write_to_mongodb', methods=['POST'])
+def write_to_mongodb():
+    user_id = request.args.get('user_id')
+    return json.dumps({'success': 'Created Success'}), 201
 
 
 if __name__ == '__main__':
