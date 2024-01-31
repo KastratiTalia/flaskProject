@@ -5,18 +5,15 @@ app = Flask(__name__)
 
 DATABASE = 'C:\\Users\\admin\\Desktop\\flaskProject\\database\\users_vouchers.db'
 
+
 # Update query_db function
 def query_db(query, args=()):
-    try:
-        conn = sqlite3.connect(DATABASE)
-        cur = conn.cursor()
-        cur.execute(query, args)
-        data = cur.fetchall()
-        conn.close()
-        return data
-    except sqlite3.Error as e:
-        print("Database error:", str(e))
-        return None
+    conn = sqlite3.connect(DATABASE)
+    cur = conn.cursor()
+    cur.execute(query, args)
+    data = cur.fetchall()
+    conn.close()
+    return data
 
 
 @app.route('/average_spending_by_age', methods=['GET'])
@@ -52,4 +49,4 @@ def average_spending_by_age():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()
