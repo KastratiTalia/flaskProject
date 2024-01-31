@@ -5,14 +5,6 @@ app = Flask(__name__)
 
 DATABASE = 'C:\\Users\\admin\\Desktop\\flaskProject\\database\\users_vouchers.db'
 
-def query_db(query, args=()):
-    conn = sqlite3.connect(DATABASE)
-    cur = conn.cursor()
-    cur.execute(query, args)
-    data = cur.fetchall()
-    conn.close()
-    return data
-
 # Update query_db function
 def query_db(query, args=()):
     try:
@@ -25,6 +17,7 @@ def query_db(query, args=()):
     except sqlite3.Error as e:
         print("Database error:", str(e))
         return None
+
 
 @app.route('/average_spending_by_age', methods=['GET'])
 def average_spending_by_age():
@@ -56,7 +49,6 @@ def average_spending_by_age():
     except Exception as e:
         print("Unexpected error:", str(e))
         return jsonify({'error': 'Internal Server Error'}), 500
-
 
 
 if __name__ == '__main__':
