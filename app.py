@@ -6,7 +6,6 @@ app = Flask(__name__)
 DATABASE = 'C:\\Users\\admin\\Desktop\\flaskProject\\database\\users_vouchers.db'
 
 
-# Update query_db function
 def query_db(query, args=()):
     conn = sqlite3.connect(DATABASE)
     cur = conn.cursor()
@@ -43,6 +42,7 @@ def average_spending_by_age():
         }
 
         return jsonify(user_data)
+
     except Exception as e:
         print("Unexpected error:", str(e))
         return jsonify({'error': 'Internal Server Error'}), 500
