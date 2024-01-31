@@ -1,4 +1,5 @@
-from flask import Flask, jsonify, request
+from flask import Flask, json, request
+
 import sqlite3
 
 app = Flask(__name__)
@@ -21,7 +22,7 @@ def average_spending_by_age():
         user_id = request.args.get('user_id')
 
         if user_id is None:
-            return jsonify({'error': 'Missing user_id parameter'}), 400
+            return json.dumps({'error': 'Missing user_id parameter'}), 400
 
         query = 'SELECT ui.user_id, ui.name, ui.age, SUM(us.money_spent) as total_spending ' \
                 'FROM user_info ui ' \
@@ -32,20 +33,21 @@ def average_spending_by_age():
         result = query_db(query, (user_id,))
 
         if not result:
-            return jsonify({'error': 'User not found'}), 404
+            return json.dumps({'error': 'User not found'}), 404
 
-        user_data = {
-            'user_id': result[0][0],
-            'name': result[0][1],
-            'age': result[0][2],
-            'total_spending': result[0][3]
-        }
+        else:
+            user_data = {
+                'user_id': result[0][0],
+                'name': result[0][1],
+                'age': result[0][2],
+                'total_spending': result[0][3]
+            }
 
-        return jsonify(user_data)
+        return json.dumps(user_data)
 
     except Exception as e:
         print("Unexpected error:", str(e))
-        return jsonify({'error': 'Internal Server Error'}), 500
+        return json.dumps({'error': 'Internal Server Error'}), 500
 
 
 if __name__ == '__main__':
