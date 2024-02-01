@@ -63,12 +63,12 @@ def get_total_spendings():
             'GROUP BY ui.age'
 
     result = query_db(query, (user_id,))
-
-    return json.dumps({
-        'user_id': user_id,
-        'age_range': age_range,
-        'average_spending': average_spending
-    })
+    #
+    # return json.dumps({
+    #     'user_id': user_id,
+    #     'age_range': age_range,
+    #     'average_spending': average_spending
+    # })
 
 
 #API 3
