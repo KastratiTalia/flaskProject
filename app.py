@@ -53,7 +53,8 @@ def average_spending_by_age():
 
 # API 2
 @app.route('/total_spent/<user_id>', methods=['GET'])
-def calculate_average_spending(user_id):
+def calculate_average_spending():
+    user_id = request.args.get('user_id')
 
     query = 'SELECT ui.age, AVG(us.money_spent) as average_spending' \
             'FROM user_info ui' \
@@ -64,16 +65,30 @@ def calculate_average_spending(user_id):
 
     user_data = query_db(query, (user_id,))
 
+    if user_data:
+        user_age = user_data[0][2]
 
+        if 18 <= user_age <= 24:
+            age_group = "18-24"
+        elif 25 <= user_age <= 30:
+            age_group = "25-30"
+        elif 31 <= user_age <= 36:
+            age_group = "31-36"
+        elif 37 <= user_age <= 47:
+            age_group = "37-47"
+        else:
+            age_group = ">47"
 
-    response_data = {
-        'user_id': result[0][0],
-        'name': result[0][1],
-        'age': result[0][2],
-        'total_spending': result[0][3]
-    }
+        response_data = {
+            'user_id': user_data[0][0],
+            'name': user_data[0][1],
+            'age': user_data[0][2],
+            'total_spending': user_data[0][3],
+            "age_group": age_group
+        }
 
-    return json.dumps(response_data)
+        return json.dumps(response_data)
+
 # API 3
 @app.route('/write_to_mongodb', methods=['POST'])
 def write_to_mongodb():
