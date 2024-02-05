@@ -54,7 +54,7 @@ def average_spending_by_age():
 # API 2
 @app.route('/total_spent/<user_id>', methods=['GET'])
 def calculate_average_spending(user_id):
-    user_id = request.args.get('user_id')
+
     query = 'SELECT ui.age, AVG(us.money_spent) as average_spending' \
             'FROM user_info ui' \
             'INNER JOIN user_spending us' \
@@ -62,11 +62,18 @@ def calculate_average_spending(user_id):
             'WHERE ui.user_id=?' \
             'GROUP BY ui.age'
 
-    result = query_db(query, (user_id,))
-
-    return json.dumps({})
+    user_data = query_db(query, (user_id,))
 
 
+
+    response_data = {
+        'user_id': result[0][0],
+        'name': result[0][1],
+        'age': result[0][2],
+        'total_spending': result[0][3]
+    }
+
+    return json.dumps(response_data)
 # API 3
 @app.route('/write_to_mongodb', methods=['POST'])
 def write_to_mongodb():
@@ -75,4 +82,4 @@ def write_to_mongodb():
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)
