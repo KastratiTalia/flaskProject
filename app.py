@@ -51,27 +51,23 @@ def average_spending_by_age():
         return json.dumps({'error': 'Internal Server Error'}), 500
 
 
-#API 2
-@app.route('/total_spent', methods=['GET'])
-def get_total_spendings():
+# API 2
+@app.route('/total_spent/<user_id>', methods=['GET'])
+def calculate_average_spending(user_id):
     user_id = request.args.get('user_id')
     query = 'SELECT ui.age, AVG(us.money_spent) as average_spending' \
             'FROM user_info ui' \
             'INNER JOIN user_spending us' \
             'ON ui.user_id = us.user_id' \
-            'WHERE ui.age BETWEEN 25 AND 30' \
+            'WHERE ui.user_id=?' \
             'GROUP BY ui.age'
 
     result = query_db(query, (user_id,))
-    #
-    # return json.dumps({
-    #     'user_id': user_id,
-    #     'age_range': age_range,
-    #     'average_spending': average_spending
-    # })
+
+    return json.dumps({})
 
 
-#API 3
+# API 3
 @app.route('/write_to_mongodb', methods=['POST'])
 def write_to_mongodb():
     user_id = request.args.get('user_id')
