@@ -53,20 +53,23 @@ def average_spending_by_age():
 
 # API 2
 @app.route('/total_spent/<user_id>', methods=['GET'])
-def calculate_average_spending():
-    user_id = request.args.get('user_id')
+def calculate_average_spending(user_id):
+    user_id = request.view_args['user_id']
 
-    query = 'SELECT ui.age, AVG(us.money_spent) as average_spending' \
-            'FROM user_info ui' \
-            'INNER JOIN user_spending us' \
-            'ON ui.user_id = us.user_id' \
-            'WHERE ui.user_id=?' \
-            'GROUP BY ui.age'
+    query = '''
+            SELECT ui.age, AVG(us.money_spent) as average_spending
+            FROM user_info ui
+            INNER JOIN user_spending us
+            ON ui.user_id = us.user_id
+            WHERE ui.user_id=?
+            GROUP BY ui.age
+    '''
 
     user_data = query_db(query, (user_id,))
 
     if user_data:
-        user_age = user_data[0][2]
+        user_age = user_data[0][0]
+        total_spending = user_data[0][1]
 
         if 18 <= user_age <= 24:
             age_group = "18-24"
@@ -80,14 +83,15 @@ def calculate_average_spending():
             age_group = ">47"
 
         response_data = {
-            'user_id': user_data[0][0],
-            'name': user_data[0][1],
-            'age': user_data[0][2],
-            'total_spending': user_data[0][3],
+            'user_id': user_id,
+            'age': user_age,
+            'total_spending': total_spending,
             "age_group": age_group
         }
 
         return json.dumps(response_data)
+    return "User not found", 404
+
 
 # API 3
 @app.route('/write_to_mongodb', methods=['POST'])
