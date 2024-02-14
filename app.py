@@ -107,7 +107,11 @@ def write_to_mongodb():
 
     result = collection.insert_one(data)
     #return json.dumps(str(result))
-    return json.dumps({'Success': 'Data was successfully inserted'}), 201
+
+    if result.inserted_id:
+        return json.dumps({'Success': 'Data was successfully inserted'}), 201
+    else:
+        return json.dumps({'Error': 'Failed to insert data'}), 500
 
 
 if __name__ == '__main__':
