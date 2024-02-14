@@ -18,9 +18,9 @@ def query_db(query, args=()):
 
 
 # MongoDB
-client = MongoClient('localhost', 27017)
-db = client.user_db
-collection = db.user_collection
+client = MongoClient('mongodb://localhost:27017/')
+db = client.userDB
+collection = db.userCollection
 
 
 # API 1
@@ -103,7 +103,10 @@ def calculate_average_spending(user_id):
 # API 3
 @app.route('/write_to_mongodb', methods=['POST'])
 def write_to_mongodb():
+    data = request.get_json()
 
+    result = collection.insert_one(data)
+    return json.dumps(str(result))
 
 
 if __name__ == '__main__':
