@@ -1,4 +1,5 @@
 from flask import Flask, json, request
+from pymongo import MongoClient
 
 import sqlite3
 
@@ -52,7 +53,7 @@ def average_spending_by_age():
 
 
 # API 2
-@app.route('/total_spent/<user_id>', methods=['GET'])
+@app.route('/total_spent/<int:user_id>', methods=['GET'])
 def calculate_average_spending(user_id):
     user_id = request.view_args['user_id']
 
@@ -98,6 +99,9 @@ def calculate_average_spending(user_id):
 def write_to_mongodb():
     user_id = request.args.get('user_id')
     return json.dumps({'success': 'Created Success'}), 201
+client = MongoClient()
+
+
 
 
 if __name__ == '__main__':
