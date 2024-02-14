@@ -1,5 +1,5 @@
-from flask import Flask, json, request
-from pymongo import MongoClient
+from flask import Flask, json, request, render_template
+from pymongo import MongoClient, ASCENDING
 
 import sqlite3
 
@@ -15,6 +15,12 @@ def query_db(query, args=()):
     data = cur.fetchall()
     conn.close()
     return data
+
+
+# MongoDB
+client = MongoClient('localhost', 27017)
+db = client.user_db
+collection = db.user_collection
 
 
 # API 1
@@ -97,10 +103,6 @@ def calculate_average_spending(user_id):
 # API 3
 @app.route('/write_to_mongodb', methods=['POST'])
 def write_to_mongodb():
-    user_id = request.args.get('user_id')
-    return json.dumps({'success': 'Created Success'}), 201
-client = MongoClient()
-
 
 
 
