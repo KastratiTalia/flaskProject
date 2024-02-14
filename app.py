@@ -106,7 +106,8 @@ def write_to_mongodb():
     data = request.get_json()
 
     result = collection.insert_one(data)
-    return json.dumps(str(result))
+    #return json.dumps(str(result))
+    return json.dumps({'Success': 'Data was successfully inserted'}), 201
 
 
 if __name__ == '__main__':
