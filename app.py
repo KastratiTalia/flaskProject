@@ -105,14 +105,17 @@ def calculate_average_spending(user_id):
 def write_to_mongodb():
     data = request.get_json()
 
-    if data['total_spending'] >= 2000:
-        result = collection.insert_one(data)
-        if result.inserted_id:
-            return json.dumps({'Success': 'Data was successfully inserted'}), 201
-        else:
-            return json.dumps({'Error': 'Failed to insert data'}), 500
+    if collection.find_one({'user_id': data['user_id']}):
+        return json.dumps({'Error': f'User with user_id {data["user_id"]} already exists!'}), 400
     else:
-        return json.dumps({'Bad Request': 'Total spending must be greater than 2000 !'}), 400
+        if data['total_spending'] >= 2000:
+            result = collection.insert_one(data)
+            if result.inserted_id:
+                return json.dumps({'Success': 'Data was successfully inserted'}), 201
+            else:
+                return json.dumps({'Error': 'Failed to insert data'}), 500
+        else:
+            return json.dumps({'Bad Request': 'Total spending must be greater than 2000 !'}), 400
 
 
 if __name__ == '__main__':
