@@ -1,6 +1,6 @@
 from flask import Flask, json, request, render_template
 from pymongo import MongoClient, ASCENDING
-
+from telegrambot import TelegramBot
 import sqlite3
 
 app = Flask(__name__)
@@ -119,4 +119,7 @@ def write_to_mongodb():
 
 
 if __name__ == '__main__':
+    TelegramBot.start_bot()
     app.run(debug=True)
+
+
