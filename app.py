@@ -118,8 +118,11 @@ def write_to_mongodb():
             return json.dumps({'Bad Request': 'Total spending must be greater than 2000 !'}), 400
 
 
+bot = TelegramBot()
+bot.start_bot()
+
+
 if __name__ == '__main__':
-    TelegramBot.start_bot()
     app.run(debug=True)
 
 
