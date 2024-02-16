@@ -50,6 +50,7 @@ def average_spending_by_age():
                 'age': result[0][2],
                 'total_spending': result[0][3]
             }
+
         print(user_data)
         return json.dumps(user_data)
 
@@ -116,6 +117,10 @@ def write_to_mongodb():
                 return json.dumps({'Error': 'Failed to insert data'}), 500
         else:
             return json.dumps({'Bad Request': 'Total spending must be greater than 2000 !'}), 400
+
+
+def send_message_to_telegram(chat_id, message):
+    pass
 
 
 bot = TelegramBot()
