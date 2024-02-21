@@ -119,6 +119,7 @@ def write_to_mongodb():
             return json.dumps({'Bad Request': 'Total spending must be greater than 2000 !'}), 400
 
 
+
 def send_message_to_telegram(chat_id, message):
     pass
 

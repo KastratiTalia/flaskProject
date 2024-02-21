@@ -4,8 +4,7 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 
 
 class TelegramBot:
-    TOKEN: Final = '6786618013:AAFrqA_rxNX3wXNfAFmKLHbTqMKzIR1VjAM'
-    BOT_USERNAME: Final = '@FlaskFlaskApiBot'
+
 
     def __init__(self):
         pass
