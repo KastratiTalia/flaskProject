@@ -65,7 +65,7 @@ def get_user_by_id(user_id):
             return jsonify(user), 200
 
 
-# API 1
+# API 1: Get total spending amount of the user with user_id
 @app.route('/total_spending', methods=['GET'])
 def average_spending_by_age():
     try:
@@ -161,8 +161,12 @@ def write_to_mongodb():
             return json.dumps({'Bad Request': 'Total spending must be greater than 2000 !'}), 400
 
 
-# def send_message_to_telegram(chat_id, message):
-#     pass
+@app.route('/')
+def hello_world():
+    return 'Hello, World!', 200
+
+
+
 
 # bot = TelegramBot()
 # bot.start_bot()
