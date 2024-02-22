@@ -6,3 +6,22 @@
 ## About
 
 ## Installation
+### Requirements
+- Python 3.x
+### Clone the Repository
+```bash
+git clone https://github.com/KastratiTalia/flaskProject.git
+```
+### Install Dependencies
+```bash
+pip install -r requirements.txt
+```
+### Run the project
+```bash
+python app.py
+```
+
+## Instructions
+
+## Project documentation
+[Document]
