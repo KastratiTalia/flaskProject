@@ -1,6 +1,8 @@
-from flask import Flask, json, request, render_template
+from flask import Flask, json, request, render_template, jsonify
 from pymongo import MongoClient, ASCENDING
-from telegrambot import TelegramBot
+from sqlalchemy.engine import row
+
+# from telegrambot import TelegramBot
 import sqlite3
 
 app = Flask(__name__)
@@ -8,6 +10,16 @@ app = Flask(__name__)
 DATABASE = 'C:\\Users\\admin\\Desktop\\flaskProject\\database\\users_vouchers.db'
 
 
+def db_connection():
+    conn = None
+    try:
+        conn = sqlite3.connect(DATABASE)
+    except sqlite3.Error as e:
+        print(e)
+    return conn
+
+
+# Sqlite database
 def query_db(query, args=()):
     conn = sqlite3.connect(DATABASE)
     cur = conn.cursor()
@@ -23,15 +35,34 @@ db = client.userDB
 collection = db.userCollection
 
 
-# Additional API
+# Get all users API
 @app.route('/users', methods=['GET', 'POST'])
 def get_all_users():
+    conn = db_connection()
+    cursor = conn.cursor()
     if request.method == 'GET':
+        cursor = conn.execute("SELECT * FROM user_info")
+        users = [
+            dict(user_id=row[0], name=row[1], email=row[2], age=row[3])
+            for row in cursor.fetchall()
+        ]
+        if users is not None:
+            return jsonify(users)
 
 
-
-
-
+# Get user by id API
+@app.route('/users/<int:user_id>', methods=['GET', 'PUT', 'DELETE'])
+def get_user_by_id(user_id):
+    conn = db_connection()
+    cursor = conn.cursor()
+    user = None
+    if request.method == 'GET':
+        cursor.execute("SELECT * FROM user_info WHERE user_id=?", (user_id,))
+        rows = cursor.fetchall()
+        for r in rows:
+            user = r
+        if user is not None:
+            return jsonify(user), 200
 
 
 # API 1
@@ -130,16 +161,12 @@ def write_to_mongodb():
             return json.dumps({'Bad Request': 'Total spending must be greater than 2000 !'}), 400
 
 
+# def send_message_to_telegram(chat_id, message):
+#     pass
 
-def send_message_to_telegram(chat_id, message):
-    pass
-
-
-bot = TelegramBot()
-bot.start_bot()
+# bot = TelegramBot()
+# bot.start_bot()
 
 
 if __name__ == '__main__':
     app.run(debug=True)
-
-
