@@ -23,6 +23,17 @@ db = client.userDB
 collection = db.userCollection
 
 
+# Additional API
+@app.route('/users', methods=['GET', 'POST'])
+def get_all_users():
+    if request.method == 'GET':
+
+
+
+
+
+
+
 # API 1
 @app.route('/total_spending', methods=['GET'])
 def average_spending_by_age():
