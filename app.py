@@ -161,16 +161,5 @@ def write_to_mongodb():
             return json.dumps({'Bad Request': 'Total spending must be greater than 2000 !'}), 400
 
 
-@app.route('/')
-def hello_world():
-    return 'Hello, World!', 200
-
-
-
-
-# bot = TelegramBot()
-# bot.start_bot()
-
-
 if __name__ == '__main__':
     app.run(debug=True)
