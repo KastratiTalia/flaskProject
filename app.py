@@ -1,42 +1,12 @@
-from flask import Flask, json, request, render_template, jsonify
-from pymongo import MongoClient, ASCENDING
-from sqlalchemy.engine import row
-
-# from telegrambot import TelegramBot
-import sqlite3
+from flask import Flask, json, request, jsonify
+from sqlDatabase import *
+from mongodb import *
 
 app = Flask(__name__)
 
-DATABASE = 'C:\\Users\\admin\\Desktop\\flaskProject\\database\\users_vouchers.db'
 
-
-def db_connection():
-    conn = None
-    try:
-        conn = sqlite3.connect(DATABASE)
-    except sqlite3.Error as e:
-        print(e)
-    return conn
-
-
-# Sqlite database
-def query_db(query, args=()):
-    conn = sqlite3.connect(DATABASE)
-    cur = conn.cursor()
-    cur.execute(query, args)
-    data = cur.fetchall()
-    conn.close()
-    return data
-
-
-# MongoDB
-client = MongoClient('mongodb://localhost:27017/')
-db = client.userDB
-collection = db.userCollection
-
-
-# Get all users API
-@app.route('/users', methods=['GET', 'POST'])
+# 1. Get all users API
+@app.route('/users', methods=['GET'])
 def get_all_users():
     conn = db_connection()
     cursor = conn.cursor()
@@ -50,8 +20,8 @@ def get_all_users():
             return jsonify(users)
 
 
-# Get user by id API
-@app.route('/users/<int:user_id>', methods=['GET', 'PUT', 'DELETE'])
+# 2. Get user by id API
+@app.route('/users/<int:user_id>', methods=['GET'])
 def get_user_by_id(user_id):
     conn = db_connection()
     cursor = conn.cursor()
@@ -65,8 +35,9 @@ def get_user_by_id(user_id):
             return jsonify(user), 200
 
 
-# API 1: Get total spending amount of the user with user_id
-@app.route('/total_spending', methods=['GET'])
+# API 1: TOTAL spending of user_id
+# http://127.0.0.1:5000/total_spent?user_id=35
+@app.route('/total_spent', methods=['GET'])
 def average_spending_by_age():
     try:
         user_id = request.args.get('user_id')
@@ -74,23 +45,23 @@ def average_spending_by_age():
         if user_id is None:
             return json.dumps({'error': 'Missing user_id parameter'}), 400
 
-        query = 'SELECT ui.user_id, ui.name, ui.age, SUM(us.money_spent) as total_spending ' \
-                'FROM user_info ui ' \
-                'INNER JOIN user_spending us ON ui.user_id = us.user_id ' \
-                'WHERE ui.user_id = ? ' \
-                'GROUP BY ui.user_id, ui.name, ui.age'
+        query = """SELECT ui.user_id, ui.name, ui.age, SUM(us.money_spent) as total_spending 
+                FROM user_info ui
+                INNER JOIN user_spending us ON ui.user_id = us.user_id
+                WHERE ui.user_id = ?
+                GROUP BY ui.user_id, ui.name, ui.age
+                """
 
         result = query_db(query, (user_id,))
 
         if not result:
             return json.dumps({'error': 'User not found'}), 404
-
         else:
             user_data = {
                 'user_id': result[0][0],
                 'name': result[0][1],
                 'age': result[0][2],
-                'total_spending': result[0][3]
+                'total_spending': round(result[0][3], 2)
             }
 
         print(user_data)
@@ -101,8 +72,9 @@ def average_spending_by_age():
         return json.dumps({'error': 'Internal Server Error'}), 500
 
 
-# API 2
-@app.route('/total_spent/<int:user_id>', methods=['GET'])
+# API 2:  AVERAGE spending for an age group
+# http://127.0.0.1:5000/average_spending_by_age/35
+@app.route('/average_spending_by_age/<int:user_id>', methods=['GET'])
 def calculate_average_spending(user_id):
     user_id = request.view_args['user_id']
 
@@ -119,7 +91,7 @@ def calculate_average_spending(user_id):
 
     if user_data:
         user_age = user_data[0][0]
-        total_spending = user_data[0][1]
+        total_spending = round(user_data[0][1], 2)
 
         if 18 <= user_age <= 24:
             age_group = "18-24"
@@ -143,7 +115,7 @@ def calculate_average_spending(user_id):
     return "User not found", 404
 
 
-# API 3
+# API 3: BONUS calculation
 @app.route('/write_to_mongodb', methods=['POST'])
 def write_to_mongodb():
     data = request.get_json()

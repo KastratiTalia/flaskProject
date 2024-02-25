@@ -1,3 +1,10 @@
+
+# The HTTP status code
+# The response payload
+# The response headers
+# The API performance/response time
+
+
 import unittest
 from app import app
 import json
@@ -36,7 +43,7 @@ class TestProject(unittest.TestCase):
     def test_3_get_user_total_spending(self):
         """Test_3: Test for API 1"""
         user_id = 35
-        response = self.app.get(f"{self.URL}/total_spending?user_id={user_id}")
+        response = self.app.get(f"{self.URL}/total_spent?user_id={user_id}")
         data = json.loads(response.data.decode('utf-8'))
 
         print(f"Response status code: {response.status_code}")
@@ -45,14 +52,18 @@ class TestProject(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIsNotNone(data, "Response JSON is None")
 
-        if data is not None:
+        if 'error' in data:
+            self.assertNotEqual(data['error'], 'User not found', "Unexpected 'User not found' error")
+        else:
             expected_keys = ['user_id', 'name', 'age', 'total_spending']
 
             for key in expected_keys:
                 self.assertIn(key, data, f"Key '{key}' not found in the response JSON")
 
-            if 'error' in data:
-                self.assertNotEqual(data['error'], 'User not found', "Unexpected 'User not found' error")
+            self.assertIsNotNone(data['user_id'], "User ID is None")
+            self.assertIsNotNone(data['name'], "Name is None")
+            self.assertIsNotNone(data['age'], "Age is None")
+            self.assertIsNotNone(data['total_spending'], "Total spending is None")
 
         print(f"Test 3 completed for user_id {user_id}")
 
