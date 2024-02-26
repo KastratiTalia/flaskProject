@@ -1,4 +1,4 @@
-from flask import Flask, json, request, jsonify
+from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from mongodb import *
 
@@ -45,24 +45,39 @@ class UserSpending(db.Model):
 # 1. Get all users API
 @app.route('/users', methods=['GET'])
 def get_all_users():
-    all_users = UserInfo.query.all()
-    user_list = [user.to_dict() for user in all_users]
-    if user_list is not None:
-        return jsonify(user_list), 200
-    else:
-        return jsonify({'error': 'No users'}), 400
+
+    try:
+
+        all_users = UserInfo.query.all()
+        user_list = [user.to_dict() for user in all_users]
+        if user_list is not None:
+            return jsonify(user_list), 200
+        else:
+            return jsonify({'error': 'No users'}), 400
+
+    except Exception as e:
+
+        print("Unexpected error:", str(e))
+        return jsonify({'error': 'Internal Server Error'}), 500
 
 
 # 2. Get user by id API
 @app.route('/users/<int:user_id>', methods=['GET'])
 def get_user_by_id(user_id):
-    user = UserInfo.query.get(user_id)
 
-    if user is not None:
-        user_dict = user.to_dict()
-        return jsonify(user_dict), 200
-    else:
-        return jsonify({"error": "User not found"}), 404
+    try:
+        user = UserInfo.query.get(user_id)
+
+        if user is not None:
+            user_dict = user.to_dict()
+            return jsonify(user_dict), 200
+        else:
+            return jsonify({"error": "User not found"}), 404
+
+    except Exception as e:
+
+        print("Unexpected error:", str(e))
+        return jsonify({'error': 'Internal Server Error'}), 500
 
 
 # API 1: TOTAL spending of user_id
@@ -73,12 +88,12 @@ def total_spent():
         user_id = request.args.get('user_id')
 
         if user_id is None:
-            return json.dumps({'error': 'Missing user_id parameter'}), 400
+            return jsonify({'error': 'Missing user_id parameter'}), 400
 
         user_info = UserInfo.query.filter_by(user_id=user_id).first()
 
         if user_info is None:
-            return json.dumps({'error': 'User not found'}), 404
+            return jsonify({'error': 'User not found'}), 404
 
         total_spending = db.session.query(db.func.sum(UserSpending.money_spent)).filter_by(user_id=user_id).scalar()
 
@@ -97,7 +112,7 @@ def total_spent():
 
     except Exception as e:
         print("Unexpected error:", str(e))
-        return json.dumps({'error': 'Internal Server Error'}), 500
+        return jsonify({'error': 'Internal Server Error'}), 500
 
 
 # API 2:  AVERAGE spending for an age group
@@ -135,7 +150,7 @@ def calculate_average_spending(user_id):
 
     except Exception as e:
         print("Unexpected error:", str(e))
-        return json.dumps({'error': 'Internal Server Error'}), 500
+        return jsonify({'error': 'Internal Server Error'}), 500
 
 
 def get_age_group(user_age):
@@ -164,26 +179,26 @@ def write_to_mongodb():
         bonus_amount = 2000
 
         if not user_id or not total_spending:
-            return json.dumps({'error': 'Missing user_id or total_spending parameter'}), 400
+            return jsonify({'error': 'Missing user_id or total_spending parameter'}), 400
 
         existing_user = collection.find_one({'user_id': user_id})
 
         if existing_user:
-            return json.dumps({'error': f'User with user_id {user_id} already exists!'}), 400
+            return jsonify({'error': f'User with user_id {user_id} already exists!'}), 400
 
         if total_spending < bonus_amount:
-            return json.dumps({'error': 'Total spending must be greater than 2000!'}), 400
+            return jsonify({'error': 'Total spending must be greater than 2000!'}), 400
 
         result = collection.insert_one(data)
 
         if result.inserted_id:
-            return json.dumps({'success': 'Data was successfully inserted'}), 201
+            return jsonify({'success': 'Data was successfully inserted'}), 201
         else:
-            return json.dumps({'error': 'Failed to insert data'}), 500
+            return jsonify({'error': 'Failed to insert data'}), 500
 
     except Exception as e:
         print("Unexpected error:", str(e))
-        return json.dumps({'error': 'Internal Server Error'}), 500
+        return jsonify({'error': 'Internal Server Error'}), 500
 
 
 if __name__ == '__main__':
