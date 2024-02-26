@@ -1,38 +1,88 @@
 from flask import Flask, json, request, jsonify
+from flask_sqlalchemy import SQLAlchemy
 from sqlDatabase import *
 from mongodb import *
 
+
 app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///C:\\Users\\admin\\Desktop\\flaskProject\\database\\users_vouchers.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db = SQLAlchemy(app)
+
+
+#many-to-one: user_spending to user_info
+class UserInfo(db.Model):
+    __tablename__ = 'user_info'
+
+    user_id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False)
+    email = db.Column(db.String(100), unique=True)
+    age = db.Column(db.Integer)
+
+    def to_dict(self):
+        return {
+            'user_id': self.user_id,
+            'name': self.name,
+            'email': self.email,
+            'age': self.age
+        }
+
+
+class UserSpending(db.Model):
+    __tablename__ = 'user_spending'
+
+    user_id = db.Column(db.Integer, primary_key=True)
+    money_spent = db.Column(db.Float, default=0)
+    year = db.Column(db.Integer)
+
+    def to_dict(self):
+        return {
+            'user_id': self.user_id,
+            'money_spent': self.money_spent,
+            'year': self.year
+        }
+
+
+@app.route('/<int:user_id>', methods=['GET'])
+def get_user_test(user_id):
+    user_spending_records = UserSpending.query.filter_by(user_id=user_id).all()
+    print(user_spending_records)
+
+    # Count the number of records for the specific user_id
+    user_id_count = UserSpending.query.filter_by(user_id=user_id).count()
+    print(user_id_count)
+
+    if user_spending_records:
+        result = [record.to_dict() for record in user_spending_records]
+        print(result)
+        return jsonify(result), 200
+    else:
+        return jsonify({"message": "No records found"}), 404
 
 
 # 1. Get all users API
 @app.route('/users', methods=['GET'])
 def get_all_users():
-    conn = db_connection()
-    cursor = conn.cursor()
-    if request.method == 'GET':
-        cursor = conn.execute("SELECT * FROM user_info")
-        users = [
-            dict(user_id=row[0], name=row[1], email=row[2], age=row[3])
-            for row in cursor.fetchall()
-        ]
-        if users is not None:
-            return jsonify(users)
+    all_users = UserInfo.query.all()
+    user_list = [user.to_dict() for user in all_users]
+    if user_list is not None:
+        return jsonify(user_list), 200
+    else:
+        return jsonify({'error': 'No users'}), 400
+
 
 
 # 2. Get user by id API
 @app.route('/users/<int:user_id>', methods=['GET'])
 def get_user_by_id(user_id):
-    conn = db_connection()
-    cursor = conn.cursor()
-    user = None
-    if request.method == 'GET':
-        cursor.execute("SELECT * FROM user_info WHERE user_id=?", (user_id,))
-        rows = cursor.fetchall()
-        for r in rows:
-            user = r
-        if user is not None:
-            return jsonify(user), 200
+    user = UserInfo.query.get(user_id)
+
+    if user is not None:
+        user_dict = user.to_dict()
+        return jsonify(user_dict), 200
+    else:
+        return jsonify({"error": "User not found"}), 404
 
 
 # API 1: TOTAL spending of user_id
