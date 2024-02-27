@@ -1,146 +1,83 @@
-# The HTTP status code
-# The response payload
-# The response headers
-# The API performance/response time
-
-
 import unittest
 from app import app
-from app import db, UserInfo, UserSpending, get_age_group
 import json
 
 
 class TestProject(unittest.TestCase):
+    """
+    Test suite for the Flask application.
+
+    Usage:
+    Run this script directly to execute all test cases using `unittest.main()
+    """
     URL = 'http://127.0.0.1:5000'
 
-    user_id = 35
-
-    expected_result_dict = {
-        'user_id': user_id,
-        'name': 'Tracy Orozco',
-        'email': 'tracy_orozco@example.com',
-        'age': 36
-    }
-
     def setUp(self):
+        """Set up the test client."""
         self.app = app.test_client()
 
-    def test_get_all_users(self):
-        """Test the get_all_users endpoint"""
+    def test_total_spent_successful(self):
+        """Test successful retrieval of total spending"""
 
-        expected_user_count = 3000
+        user_id = 35
+        response = self.app.get(f'{self.URL}/total_spent?user_id={user_id}')
+        response_data = json.loads(response.data.decode('utf-8'))
 
-        response = self.app.get(f'{self.URL}/users')
-
-        # Check status code
         self.assertEqual(response.status_code, 200)
 
-        # Check response data
+        # Assert that the required keys are present in the response
+        self.assertIn('user_id', response_data)
+        self.assertIn('name', response_data)
+        self.assertIn('age', response_data)
+        self.assertIn('total_spending', response_data)
+
+    def test_total_spent_missing_user_id(self):
+        """Test when user_id parameter is missing"""
+
+        response = self.app.get(f'{self.URL}/total_spent')
         response_data = json.loads(response.data.decode('utf-8'))
-        self.assertIsInstance(response_data, list)
 
-        self.assertEqual(len(response_data), expected_user_count)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('error', response_data)
+        self.assertEqual(response_data['error'], 'Missing user_id parameter')
 
-        # Check that each user in the response has the expected keys
-        expected_user_keys = ['user_id', 'name', 'email', 'age']
-        for user in response_data:
-            self.assertIsInstance(user, dict)
-            for key in expected_user_keys:
-                self.assertIn(key, user)
+    def test_total_spent_user_not_found(self):
+        """Test when user is not found"""
 
-        print("Test get_all_users completed")
-
-    def test_2_get_user_by_id(self):
-        """ Test_2: get user by id """
-        resp = self.app.get(f"{self.URL}/users/{self.user_id}")
-        response_json = resp.get_json()
-
-        self.assertEqual(resp.status_code, 200)
-
-        self.assertIsNotNone(response_json, "Response JSON is None")
-        self.assertDictEqual(response_json, self.expected_result_dict)
-
-        print("Test 2 completed")
-
-    def test_user_not_found(self):
-        """Test for user not found scenario"""
-        user_id = 4000
-
-        response = self.app.get(f"{self.URL}/users/{user_id}")
-        response_json = response.get_json()
+        non_existent_user_id = 4000
+        response = self.app.get(f'{self.URL}/total_spent?user_id={non_existent_user_id}')
+        response_data = json.loads(response.data.decode('utf-8'))
 
         self.assertEqual(response.status_code, 404)
-        self.assertEqual(response_json['error'], "User not found")
+        self.assertIn('error', response_data)
+        self.assertEqual(response_data['error'], 'User not found')
 
-        print("User not found test completed")
+    def test_average_spending_successful(self):
+        """Test successful calculation of average spending"""
 
-    def test_3_get_user_total_spending(self):
-        """Test_3: Test for API 1"""
-        response = self.app.get(f"{self.URL}/total_spent?user_id={self.user_id}")
-        data = json.loads(response.data.decode('utf-8'))
-
-        print(f"Response status code: {response.status_code}")
-        print(f"Response JSON: {data}")
+        user_id = 445
+        response = self.app.get(f'{self.URL}/average_spending_by_age/{user_id}')
+        response_data = json.loads(response.data.decode('utf-8'))
 
         self.assertEqual(response.status_code, 200)
-        self.assertIsNotNone(data, "Response JSON is None")
 
-        if 'error' in data:
-            self.assertNotEqual(data['error'], 'User not found', "Unexpected 'User not found' error")
-        else:
-            expected_keys = ['user_id', 'name', 'age', 'total_spending']
-
-            for key in expected_keys:
-                self.assertIn(key, data, f"Key '{key}' not found in the response JSON")
-
-            self.assertIsNotNone(data['user_id'], "User ID is None")
-            self.assertIsNotNone(data['name'], "Name is None")
-            self.assertIsNotNone(data['age'], "Age is None")
-            self.assertIsNotNone(data['total_spending'], "Total spending is None")
-
-        print(f"Test 3 completed for user_id {self.user_id}")
+        # Assert that the required keys are present in the response
+        self.assertIn('user_id', response_data)
+        self.assertIn('age', response_data)
+        self.assertIn('average_spending', response_data)
+        self.assertIn('age_group', response_data)
 
     def test_average_spending_user_not_found(self):
         """Test when user is not found"""
-        user_id = 4000
 
-        response = self.app.get(f'{self.URL + '/average_spending_by_age'}/{user_id}')
-
+        non_existent_user_id = 0
+        response = self.app.get(f'{self.URL}/average_spending_by_age/{non_existent_user_id}')
         self.assertEqual(response.status_code, 404)
-
-        self.assertEqual(response.data.decode('utf-8'), 'User not found')
-
-    def test_4_get_user_average_spending_by_age(self):
-        """Test_4: Test for API 2 - average spending by age"""
-
-        response = self.app.get(f"{self.URL}/average_spending_by_age/{self.user_id}")
-        data = json.loads(response.data.decode('utf-8'))
-
-        print(f"Response status code: {response.status_code}")
-        print(f"Response JSON: {data}")
-
-        self.assertEqual(response.status_code, 200)
-        self.assertIsNotNone(data, "Response JSON is None")
-
-        if 'error' in data:
-            self.assertNotEqual(data['error'], 'User not found', "Unexpected 'User not found' error")
-        else:
-            expected_keys = ['user_id', 'age', 'total_spending', 'age_group']
-
-            for key in expected_keys:
-                self.assertIn(key, data, f"Key '{key}' not found in the response JSON")
-
-            self.assertIsNotNone(data['user_id'], "User ID is None")
-            self.assertIsNotNone(data['age'], "Age is None")
-            self.assertIsNotNone(data['total_spending'], "Total spending is None")
-            self.assertIsNotNone(data['age_group'], "Age group is None")
-
-        print(f"Test 4 completed for user_id {self.user_id}")
 
     def test_write_to_mongodb_successful(self):
         """Test successful data insertion"""
 
-        data = {"user_id": 222, "total_spending": 2500}
+        data = {"user_id": 225, "total_spending": 2600}
         headers = {"Content-Type": "application/json"}
 
         response = self.app.post(self.URL + '/write_to_mongodb', data=json.dumps(data), headers=headers)
@@ -184,6 +121,59 @@ class TestProject(unittest.TestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response_data['error'], 'Total spending must be greater than 2000!')
+
+    def test_get_all_users(self):
+        """Test the get_all_users endpoint"""
+
+        expected_user_count = 3000
+
+        response = self.app.get(f'{self.URL}/users')
+
+        # Check status code
+        self.assertEqual(response.status_code, 200)
+
+        # Check response data
+        response_data = json.loads(response.data.decode('utf-8'))
+        self.assertIsInstance(response_data, dict)
+
+        users = response_data.get('users', [])
+        self.assertIsInstance(users, list)
+
+        self.assertEqual(len(users), expected_user_count)
+
+        # Check that each user in the response has the expected keys
+        expected_user_keys = ['user_id', 'name', 'email', 'age']
+        for user in users:
+            self.assertIsInstance(user, dict)
+            for key in expected_user_keys:
+                self.assertIn(key, user)
+
+    def test_get_user_by_id_successful(self):
+        """Test successful retrieval of a user by ID"""
+
+        user_id = 35
+        response = self.app.get(f'{self.URL}/users/{user_id}')
+        self.assertEqual(response.status_code, 200)
+
+        # Check response data
+        user_data = json.loads(response.data.decode('utf-8'))
+        self.assertIsInstance(user_data, dict)
+
+        expected_user_keys = ['user_id', 'name', 'email', 'age']
+        for key in expected_user_keys:
+            self.assertIn(key, user_data)
+
+    def test_get_user_by_id_not_found(self):
+        """Test when user is not found by ID"""
+
+        non_existent_user_id = 3001
+        response = self.app.get(f'{self.URL}/users/{non_existent_user_id}')
+        self.assertEqual(response.status_code, 404)
+
+        # Check error message
+        error_data = json.loads(response.data.decode('utf-8'))
+        self.assertIn('error', error_data)
+        self.assertEqual(error_data['error'], 'User not found')
 
 
 if __name__ == '__main__':

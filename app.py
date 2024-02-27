@@ -1,16 +1,38 @@
-from flask import Flask, request, jsonify
+import os
+from flask import Flask, request, jsonify, render_template
 from flask_sqlalchemy import SQLAlchemy
-from mongodb import *
+from pymongo import MongoClient
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///C:\\Users\\admin\\Desktop\\flaskProject\\database\\users_vouchers.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# Database path
+current_file_path = os.path.abspath(__file__)
+current_directory = os.path.dirname(current_file_path)
+db_file_path = os.path.join(current_directory, 'users_vouchers.db')
+
+# SQLALCHEMY settings
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_file_path}'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
+# MongoDB settings
+client = MongoClient('mongodb://localhost:27017/')
+m_db = client.userDB
+collection = m_db.userCollection
 
-# many-to-one: user_spending to user_info
+
+# Models
 class UserInfo(db.Model):
+    """
+    SQLAlchemy Model for user information.
+
+    Attributes:
+    - user_id (int): Primary key for the user.
+    - name (str): User's name.
+    - email (str): User's email (unique).
+    - age (int): User's age.
+    """
+
     __tablename__ = 'user_info'
 
     user_id = db.Column(db.Integer, primary_key=True)
@@ -19,6 +41,13 @@ class UserInfo(db.Model):
     age = db.Column(db.Integer)
 
     def to_dict(self):
+        """
+        Convert UserInfo instance to a dictionary.
+
+        Returns:
+        dict: Dictionary containing user information.
+        """
+
         return {
             'user_id': self.user_id,
             'name': self.name,
@@ -28,6 +57,15 @@ class UserInfo(db.Model):
 
 
 class UserSpending(db.Model):
+    """
+    SQLAlchemy Model for user spending.
+
+    Attributes:
+    - user_id (int): Primary key for the user.
+    - money_spent (float): Amount of money spent by the user (default is 0).
+    - year (int): Year associated with the spending.
+    """
+
     __tablename__ = 'user_spending'
 
     user_id = db.Column(db.Integer, primary_key=True)
@@ -35,6 +73,12 @@ class UserSpending(db.Model):
     year = db.Column(db.Integer)
 
     def to_dict(self):
+        """
+        Convert UserSpending instance to a dictionary.
+
+        Returns:
+        dict: Dictionary containing spending information.
+        """
         return {
             'user_id': self.user_id,
             'money_spent': self.money_spent,
@@ -42,48 +86,28 @@ class UserSpending(db.Model):
         }
 
 
-# 1. Get all users API
-@app.route('/users', methods=['GET'])
-def get_all_users():
+@app.route('/')
+def index():
+    """
+    Route handler for the home page.
 
-    try:
-
-        all_users = UserInfo.query.all()
-        user_list = [user.to_dict() for user in all_users]
-        if user_list is not None:
-            return jsonify(user_list), 200
-        else:
-            return jsonify({'error': 'No users'}), 400
-
-    except Exception as e:
-
-        print("Unexpected error:", str(e))
-        return jsonify({'error': 'Internal Server Error'}), 500
+    Returns:
+    str: Rendered HTML template.
+    """
+    return render_template('index.html')
 
 
-# 2. Get user by id API
-@app.route('/users/<int:user_id>', methods=['GET'])
-def get_user_by_id(user_id):
-
-    try:
-        user = UserInfo.query.get(user_id)
-
-        if user is not None:
-            user_dict = user.to_dict()
-            return jsonify(user_dict), 200
-        else:
-            return jsonify({"error": "User not found"}), 404
-
-    except Exception as e:
-
-        print("Unexpected error:", str(e))
-        return jsonify({'error': 'Internal Server Error'}), 500
-
-
-# API 1: TOTAL spending of user_id
-# http://127.0.0.1:5000/total_spent?user_id=35
 @app.route('/total_spent', methods=['GET'])
 def total_spent():
+    """
+    API endpoint to get the total spending of a user.
+
+    Usage Example:
+    http://127.0.0.1:5000/total_spent?user_id=35
+
+    Returns:
+    jsonify: JSON response containing user data and total spending.
+    """
     try:
         user_id = request.args.get('user_id')
 
@@ -115,10 +139,20 @@ def total_spent():
         return jsonify({'error': 'Internal Server Error'}), 500
 
 
-# API 2:  AVERAGE spending for an age group
-# http://127.0.0.1:5000/average_spending_by_age/35
 @app.route('/average_spending_by_age/<int:user_id>', methods=['GET'])
 def calculate_average_spending(user_id):
+    """
+    API endpoint to calculate the average spending for a user's age group.
+
+    Args:
+        user_id (int): The user ID extracted from the URL.
+
+    Usage Example:
+    http://127.0.0.1:5000/average_spending_by_age/35
+
+    Returns:
+    jsonify: JSON response containing user data, age, average spending, and age group.
+    """
     try:
         user_info = UserInfo.query.filter_by(user_id=user_id).first()
 
@@ -135,14 +169,14 @@ def calculate_average_spending(user_id):
             return "User has no spending data", 404
 
         user_age = age_query[0][0]
-        total_spending = round(age_query[0][1], 2)
+        average_spending = round(age_query[0][1], 2)
 
         age_group = get_age_group(user_age)
 
         response_data = {
             'user_id': user_id,
             'age': user_age,
-            'total_spending': total_spending,
+            'average_spending': average_spending,
             'age_group': age_group
         }
 
@@ -154,6 +188,15 @@ def calculate_average_spending(user_id):
 
 
 def get_age_group(user_age):
+    """
+    Helper function to determine the age group based on user's age.
+
+    Args:
+    - user_age (int): The age of the user.
+
+    Returns:
+    str: Age group string.
+    """
     if 18 <= user_age <= 24:
         return "18-24"
     elif 25 <= user_age <= 30:
@@ -166,11 +209,19 @@ def get_age_group(user_age):
         return ">47"
 
 
-# API 3: BONUS calculation
-# curl -X POST -H "Content-Type: application/json" -d "
-# {\"user_id\": 123, \"total_spending\": 2500}" "http://127.0.0.1:5000/write_to_mongodb"
+
 @app.route('/write_to_mongodb', methods=['POST'])
 def write_to_mongodb():
+    """
+    API endpoint to write user data to MongoDB that have earned a bonus.
+
+    Example Usage Command:
+    curl -X POST -H "Content-Type: application/json" -d "
+    {\"user_id\": 123, \"total_spending\": 2500}" "http://127.0.0.1:5000/write_to_mongodb"
+
+    Returns:
+    jsonify: JSON response indicating success or failure.
+    """
     try:
         data = request.get_json()
         user_id = data.get('user_id')
@@ -197,6 +248,56 @@ def write_to_mongodb():
             return jsonify({'error': 'Failed to insert data'}), 500
 
     except Exception as e:
+        print("Unexpected error:", str(e))
+        return jsonify({'error': 'Internal Server Error'}), 500
+
+
+@app.route('/users', methods=['GET'])
+def get_all_users():
+    """
+    API endpoint to retrieve information for all users.
+
+    Returns:
+    jsonify: JSON response containing a list of users and their count if available,
+    or an error message if no users are found.
+    """
+    try:
+        all_users = UserInfo.query.all()
+        user_list = [user.to_dict() for user in all_users]
+
+        if user_list:
+            return jsonify({'users': user_list, 'count': len(user_list)}), 200
+        else:
+            return jsonify({'error': 'No users'}), 404
+
+    except Exception as e:
+        print("Unexpected error:", str(e))
+        return jsonify({'error': 'Internal Server Error'}), 500
+
+
+@app.route('/users/<int:user_id>', methods=['GET'])
+def get_user_by_id(user_id):
+    """
+    API endpoint to retrieve information for a specific user by user_id.
+
+    Args:
+    - user_id (int): User ID to look up.
+
+    Returns:
+    jsonify: JSON response containing user information if the user is found,
+    or an error message if the user is not found.
+    """
+    try:
+        user = UserInfo.query.get(user_id)
+
+        if user is not None:
+            user_dict = user.to_dict()
+            return jsonify(user_dict), 200
+        else:
+            return jsonify({"error": "User not found"}), 404
+
+    except Exception as e:
+
         print("Unexpected error:", str(e))
         return jsonify({'error': 'Internal Server Error'}), 500
 
