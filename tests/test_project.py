@@ -1,4 +1,5 @@
 import unittest
+from pymongo import MongoClient
 from app import app
 import json
 
@@ -14,7 +15,15 @@ class TestProject(unittest.TestCase):
 
     def setUp(self):
         """Set up the test client."""
+        app.config['TESTING'] = True
         self.app = app.test_client()
+        self.test_db_client = MongoClient('mongodb://localhost:27017/')
+        self.test_db = self.test_db_client.test_userDB  # Use a separate test database
+        self.test_collection = self.test_db.test_userCollection  # Use a separate test collection
+
+    def tearDown(self):
+        # Clean up the test database after each test
+        self.test_db_client.drop_database('test_userDB')
 
     def test_total_spent_successful(self):
         """Test successful retrieval of total spending"""
@@ -77,7 +86,7 @@ class TestProject(unittest.TestCase):
     def test_write_to_mongodb_successful(self):
         """Test successful data insertion"""
 
-        data = {"user_id": 225, "total_spending": 2600}
+        data = {"user_id": 444, "total_spending": 2600}
         headers = {"Content-Type": "application/json"}
 
         response = self.app.post(self.URL + '/write_to_mongodb', data=json.dumps(data), headers=headers)
@@ -141,7 +150,6 @@ class TestProject(unittest.TestCase):
 
         self.assertEqual(len(users), expected_user_count)
 
-        # Check that each user in the response has the expected keys
         expected_user_keys = ['user_id', 'name', 'email', 'age']
         for user in users:
             self.assertIsInstance(user, dict)
@@ -174,6 +182,20 @@ class TestProject(unittest.TestCase):
         error_data = json.loads(response.data.decode('utf-8'))
         self.assertIn('error', error_data)
         self.assertEqual(error_data['error'], 'User not found')
+
+    def test_get_mongodb_users_success(self):
+        """Test successful retrival of mongodb users"""
+
+        user_data = [{'_id': 1, 'name': 'User1'}, {'_id': 2, 'name': 'User2'}]
+        self.test_collection.insert_many(user_data)
+
+        response = self.app.get('/mongodb_users')
+
+        self.assertEqual(response.status_code, 200)
+
+        data = json.loads(response.get_data(as_text=True))
+
+        self.assertIn('mongodb_users', data)
 
 
 if __name__ == '__main__':

@@ -2,18 +2,21 @@ import os
 from flask import Flask, request, jsonify, render_template
 from flask_sqlalchemy import SQLAlchemy
 from pymongo import MongoClient
-
+from bson import json_util
 app = Flask(__name__)
+
 
 # Database path
 current_file_path = os.path.abspath(__file__)
 current_directory = os.path.dirname(current_file_path)
 db_file_path = os.path.join(current_directory, 'users_vouchers.db')
 
+
 # SQLALCHEMY settings
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_file_path}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
+
 
 # MongoDB settings
 client = MongoClient('mongodb://localhost:27017/')
@@ -86,6 +89,31 @@ class UserSpending(db.Model):
         }
 
 
+def get_age_group(user_age):
+    """
+    Helper function to determine the age group based on user's age.
+
+    Args:
+    - user_age (int): The age of the user.
+
+    Returns:
+    str: Age group string.
+    """
+    age_groups = {
+        (18, 24): "18-24",
+        (25, 30): "25-30",
+        (31, 36): "31-36",
+        (37, 47): "37-47",
+        (48, 100): ">47"
+    }
+
+    for age_range, group in age_groups.items():
+        if age_range[0] <= user_age <= age_range[1]:
+            return group
+
+    return ">47"
+
+
 @app.route('/')
 def index():
     """
@@ -132,7 +160,7 @@ def total_spent():
         }
 
         print(user_data)
-        return jsonify(user_data)
+        return jsonify(user_data), 200
 
     except Exception as e:
         print("Unexpected error:", str(e))
@@ -157,7 +185,7 @@ def calculate_average_spending(user_id):
         user_info = UserInfo.query.filter_by(user_id=user_id).first()
 
         if user_info is None:
-            return "User not found", 404
+            return jsonify({'error': 'User not found'}), 404
 
         age_query = db.session.query(UserInfo.age, db.func.avg(UserSpending.money_spent).label('average_spending')) \
             .join(UserSpending, UserInfo.user_id == UserSpending.user_id) \
@@ -166,7 +194,7 @@ def calculate_average_spending(user_id):
             .all()
 
         if not age_query:
-            return "User has no spending data", 404
+            return jsonify({'error': 'User has no spending data'}), 400
 
         user_age = age_query[0][0]
         average_spending = round(age_query[0][1], 2)
@@ -187,37 +215,13 @@ def calculate_average_spending(user_id):
         return jsonify({'error': 'Internal Server Error'}), 500
 
 
-def get_age_group(user_age):
-    """
-    Helper function to determine the age group based on user's age.
-
-    Args:
-    - user_age (int): The age of the user.
-
-    Returns:
-    str: Age group string.
-    """
-    if 18 <= user_age <= 24:
-        return "18-24"
-    elif 25 <= user_age <= 30:
-        return "25-30"
-    elif 31 <= user_age <= 36:
-        return "31-36"
-    elif 37 <= user_age <= 47:
-        return "37-47"
-    else:
-        return ">47"
-
-
-
 @app.route('/write_to_mongodb', methods=['POST'])
 def write_to_mongodb():
     """
     API endpoint to write user data to MongoDB that have earned a bonus.
 
     Example Usage Command:
-    curl -X POST -H "Content-Type: application/json" -d "
-    {\"user_id\": 123, \"total_spending\": 2500}" "http://127.0.0.1:5000/write_to_mongodb"
+    curl -X POST -H "Content-Type: application/json" -d "{\"user_id\": 123, \"total_spending\": 2500}" "http://127.0.0.1:5000/write_to_mongodb"
 
     Returns:
     jsonify: JSON response indicating success or failure.
@@ -298,6 +302,30 @@ def get_user_by_id(user_id):
 
     except Exception as e:
 
+        print("Unexpected error:", str(e))
+        return jsonify({'error': 'Internal Server Error'}), 500
+
+
+@app.route('/mongodb_users', methods=['GET'])
+def get_mongodb_users():
+    """
+    API endpoint to retrieve users from MongoDB.
+
+    Returns:
+    jsonify: JSON response containing a list of users from MongoDB or an error message if no users are found.
+    """
+    try:
+        mongo_users = list(collection.find())
+
+        if mongo_users:
+            for user in mongo_users:
+                user['_id'] = str(user['_id'])
+
+            return jsonify({'mongodb_users': mongo_users}), 200
+        else:
+            return jsonify({'error': 'No users in MongoDB'}), 404
+
+    except Exception as e:
         print("Unexpected error:", str(e))
         return jsonify({'error': 'Internal Server Error'}), 500
 
