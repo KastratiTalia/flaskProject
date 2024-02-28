@@ -87,4 +87,4 @@ flaskProject/
 ![demo2](https://github.com/KastratiTalia/flaskProject/assets/93604292/87c29584-36e7-4001-95b5-ec9d6d56b30d)
 
 ## Documentation
-Wiki Documentation: [https://github.com/KastratiTalia/flaskProject/wiki]
+- Github Wiki Documentation: [Documentation](https://github.com/KastratiTalia/flaskProject/wiki)
