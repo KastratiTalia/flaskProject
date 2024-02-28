@@ -80,3 +80,11 @@ flaskProject/
      ```
      $ python -m unittest tests.test_project.TestProject.test_total_spent_successful
      ```
+## API Video Demo
+![demo1](https://github.com/KastratiTalia/flaskProject/assets/93604292/5bf009db-cd9d-40bb-8c20-a782fcd41e65)
+
+## Tests Video Demo
+![demo2](https://github.com/KastratiTalia/flaskProject/assets/93604292/87c29584-36e7-4001-95b5-ec9d6d56b30d)
+
+## Documentation
+Wiki Documentation: [https://github.com/KastratiTalia/flaskProject/wiki]
