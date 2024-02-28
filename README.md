@@ -80,8 +80,3 @@ flaskProject/
      ```
      $ python -m unittest tests.test_project.TestProject.test_total_spent_successful
      ```
-
-
-## Project demo  
-## Project documentation
-[Document]
